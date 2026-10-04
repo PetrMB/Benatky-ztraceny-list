@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>Bětka preview</title>
+<style>html,body{margin:0;background:#20304a}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1400" height="560"></canvas>
+<div id="errlog" style="position:fixed;left:4px;top:4px;color:#f66;font:12px monospace;white-space:pre"></div>
+<script>
+window.__errors = [];
+window.onerror = function (m, s, l) {
+  window.__errors.push(m + ' @' + l);
+  document.getElementById('errlog').textContent = window.__errors.join('\n');
+};
+window.BNJ = { _registry: {}, state: {},
+  registerCharacter: function (o) { window.BNJ._registry[o.id] = o; } };
+</script>
+<script src="../src/30_characters.js"></script>
+<script>
+window.addEventListener('load', function () {
+  var ctx = document.getElementById('c').getContext('2d');
+  var ch = window.BNJ._registry['trhovkyne'];
+  var poses = [
+    { label: 'idle',      p: { t: 1.2, dir: 1 } },
+    { label: 'idle flip', p: { t: 1.2, dir: -1 } },
+    { label: 'talk',      p: { t: 2.7, dir: 1, talk: true, mouth: 0.7 } },
+    { label: 'walk',      p: { t: 0.9, dir: 1, walk: true, phase: 0.3 } },
+    { label: 'gesto',     p: { t: 1.6, dir: 1, ges: 0.8 } }
+  ];
+  for (var i = 0; i < poses.length; i++) {
+    ctx.save();
+    ctx.translate(150 + i * 270, 470);
+    try { ch.draw(ctx, poses[i].p); } catch (e) { window.onerror(String(e), '', 0); }
+    ctx.restore();
+    ctx.fillStyle = '#fff'; ctx.font = '16px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(poses[i].label, 150 + i * 270, 520);
+  }
+});
+</script>
+</body>
+</html>

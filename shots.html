@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>shots harness</title>
+<style>html,body{margin:0;padding:0;height:100%;background:#05070d;overflow:hidden}
+#game{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="errlog" style="position:fixed;left:0;top:0;color:#f66;font:12px monospace;z-index:9999;white-space:pre"></div>
+<script>
+window.__errors = [];
+window.onerror = function (msg, src, line) {
+  window.__errors.push(msg + ' @' + line);
+  document.getElementById('errlog').textContent = window.__errors.join('\n');
+};
+// Headless Chrome s --virtual-time-budget téměř nespouští requestAnimationFrame
+// (naměřeno: 2 rAF za 15 s virtuálního času) → engine loop stojí a fader
+// zůstane na ~1 (černá/ztmavená scéna). Timery pod virtual time běží,
+// takže rAF nahradíme setTimeoutem. Nutné PŘED načtením 00_engine.js.
+window.requestAnimationFrame = function (cb) {
+  return setTimeout(function () { cb(performance.now()); }, 16);
+};
+window.cancelAnimationFrame = clearTimeout;
+</script>
+<script src="src/00_engine.js"></script>
+<script src="src/10_strings.js"></script>
+<script src="src/20_backgrounds.js"></script>
+<script src="src/30_characters.js"></script>
+<script src="src/40_dialogues.js"></script>
+<script src="src/50_puzzles.js"></script>
+<script src="src/60_audio.js"></script>
+<script src="src/90_boot.js"></script>
+<script>
+// hash: #sceneId nebo prázdné = titulka
+window.addEventListener('load', function () {
+  var scene = (location.hash || '').replace('#', '');
+  setTimeout(function () {
+    try {
+      if (scene) {
+        BNJ.startNewGame();
+        if (scene !== 'start') setTimeout(function () { BNJ.goto(scene); }, 400);
+      }
+      // POZN.: BNJ.G engine neexportuje (G je lokální const v 00_engine.js:213),
+      // tenhle blok byl vždy no-op. Fade teď doběhne sám díky rAF shimu výše.
+      setTimeout(function () { if (BNJ.G) { BNJ.G.fader = 0; BNJ.G.faderTarget = 0; } }, 1200);
+    } catch (e) { window.onerror(String(e), '', 0); }
+  }, 300);
+});
+</script>
+</body>
+</html>

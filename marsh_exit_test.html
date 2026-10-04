@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>marsh exit test</title>
+<style>html,body{margin:0;padding:0;height:100%;background:#05070d;overflow:hidden}
+#game{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="errlog" style="position:fixed;left:0;top:0;color:#0f0;background:#000;font:18px monospace;z-index:9999;white-space:pre"></div>
+<script>
+window.__errors = [];
+window.onerror = function (msg, src, line) { window.__errors.push(msg + ' @' + line); };
+window.requestAnimationFrame = function (cb) { return setTimeout(function () { cb(performance.now()); }, 16); };
+window.cancelAnimationFrame = clearTimeout;
+var log = [];
+function L(s) { log.push(s); }
+setInterval(function () {
+  document.getElementById('errlog').textContent =
+    'scene: ' + (window.BNJ ? BNJ.state.scene : '?') + '\n' + log.join('\n') +
+    '\nerrors: ' + window.__errors.join(' | ');
+}, 200);
+</script>
+<script src="src/00_engine.js"></script>
+<script src="src/10_strings.js"></script>
+<script src="src/20_backgrounds.js"></script>
+<script src="src/30_characters.js"></script>
+<script src="src/40_dialogues.js"></script>
+<script src="src/50_puzzles.js"></script>
+<script src="src/60_audio.js"></script>
+<script src="src/90_boot.js"></script>
+<script>
+function clientOfScreen(sx, sy) {
+  var cv = document.querySelector('canvas');
+  var r = cv.getBoundingClientRect();
+  return [r.left + sx * (r.width / 1920), r.top + sy * (r.height / 1080)];
+}
+function mouseTo(sx, sy) {
+  var cv = document.querySelector('canvas');
+  var c = clientOfScreen(sx, sy);
+  cv.dispatchEvent(new MouseEvent('mousemove', { clientX: c[0], clientY: c[1], bubbles: true }));
+}
+function clickAt(sx, sy) {
+  var cv = document.querySelector('canvas');
+  var c = clientOfScreen(sx, sy);
+  cv.dispatchEvent(new MouseEvent('mousemove', { clientX: c[0], clientY: c[1], bubbles: true }));
+  setTimeout(function () {
+    cv.dispatchEvent(new MouseEvent('mousedown', { clientX: c[0], clientY: c[1], button: 0, bubbles: true }));
+  }, 150);
+}
+window.addEventListener('load', function () {
+  var mode = (location.hash || '#a').replace('#', '');
+  setTimeout(function () {
+    try {
+      BNJ.startNewGame();
+      if (mode === 'a') {
+        // A: normální vstup zprava z old_town (spawn 300,930), klik na exit vlevo dole
+        setTimeout(function () { BNJ.goto('marsh', [300, 930]); }, 400);
+        setTimeout(function () { L('A: mousemove+click screen (190,930) = svět (190,930), camX=0'); clickAt(190, 930); }, 4000);
+        setTimeout(function () { L('A: final scene=' + BNJ.state.scene); }, 11000);
+      } else if (mode === 'b') {
+        // B: hráč u dubu vpravo (2000,1000), zkouší se vrátit klikáním vlevo dole na zem
+        setTimeout(function () { BNJ.goto('marsh', [2000, 1000]); }, 400);
+        var t = 4000;
+        for (var i = 0; i < 7; i++) {
+          (function (ii, tt) {
+            setTimeout(function () { L('B: click #' + ii + ' screen (200,1000)'); clickAt(200, 1000); }, tt);
+          })(i, t);
+          t += 1300;
+        }
+        setTimeout(function () { L('B: final scene=' + BNJ.state.scene); }, 14500);
+      } else if (mode === 'c') {
+        // C: river_bank, husa NEnalákaná — má sedět na hnízdě (2080,884), pergamen pod ní
+        setTimeout(function () { BNJ.goto('river_bank', [1750, 950]); }, 400);
+        setTimeout(function () { L('C: goose_lured=' + !!BNJ.state.flags.goose_lured); }, 6000);
+      } else if (mode === 'd') {
+        // D: po nalákání a vybrání hnízda — husa na břehu, hnízdo bez pergamenu a brku
+        setTimeout(function () {
+          BNJ.flag('goose_lured'); BNJ.flag('_nest_looted');
+          BNJ.give('frag_b'); BNJ.give('brk');
+          BNJ.goto('river_bank', [1750, 950]);
+        }, 400);
+        setTimeout(function () { L('D: lured+looted'); }, 6000);
+      } else if (mode === 'e') {
+        // E: marsh před vyzvednutím — fragment má být vidět pod ledem tůně
+        setTimeout(function () { BNJ.goto('marsh', [700, 1000]); }, 400);
+        setTimeout(function () { L('E: frag_c in inv=' + BNJ.state.inventory.includes('frag_c')); }, 6000);
+      } else if (mode === 'g') {
+        // G: old_town levá polovina
+        setTimeout(function () { BNJ.goto('old_town', [400, 950]); }, 400);
+      } else if (mode === 'g2') {
+        // G2: old_town + debug overlay WINS/stěn (camX=0)
+        setTimeout(function () { BNJ.goto('old_town', [400, 950]); }, 400);
+        var WINS = [[420,742,34,44],[520,746,30,40],[700,738,36,46],[820,744,30,40],[1060,700,40,52],[1180,706,36,48],[2110,726,32,44],[660,640,26,34]];
+        var COTT = [[380,660,220,180],[660,650,230,190]]; // cottage(cx, baseY-chh, cw, chh)
+        setTimeout(function () {
+          var def = BNJ._registry.scenes.old_town;
+          var orig = def.overlayDynamic;
+          def.overlayDynamic = function (c, t, camX) {
+            if (orig) orig.call(def, c, t, camX);
+            c.save();
+            c.lineWidth = 3;
+            c.strokeStyle = '#ff2020';
+            WINS.forEach(function (w) { c.strokeRect(w[0], w[1], w[2], w[3]); });
+            c.strokeStyle = '#20c0ff';
+            COTT.forEach(function (w) { c.strokeRect(w[0], w[1], w[2], w[3]); });
+            c.restore();
+          };
+        }, 1500);
+      } else if (mode === 'h') {
+        // H: old_town pravá polovina
+        setTimeout(function () { BNJ.goto('old_town', [2300, 950]); }, 400);
+      } else if (mode === 'f') {
+        // F: marsh po vyzvednutí — fragment NESMÍ být v tůni
+        setTimeout(function () {
+          BNJ.give('frag_c');
+          BNJ.goto('marsh', [700, 1000]);
+        }, 400);
+        setTimeout(function () { L('F: frag_c in inv=' + BNJ.state.inventory.includes('frag_c')); }, 6000);
+      }
+    } catch (e) { window.onerror(String(e), '', 0); }
+  }, 300);
+});
+</script>
+</body>
+</html>

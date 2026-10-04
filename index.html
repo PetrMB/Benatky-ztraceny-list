@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ztracený list — Benátky nad Jizerou, L.P. 1600</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #05070d;
+    overflow: hidden;
+  }
+  #game {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(1200px 700px at 50% 42%, #0a1020 0%, #05070d 72%);
+  }
+  #game canvas {
+    cursor: none;
+    box-shadow: 0 0 90px rgba(0, 0, 0, 0.85), 0 0 22px rgba(20, 40, 90, 0.25);
+  }
+  noscript {
+    color: #e8dcbe;
+    font: 24px Georgia, serif;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div id="game"></div>
+<noscript>Ztracený list potřebuje JavaScript — bez něj zůstane list na dně Jizery.</noscript>
+
+<!-- dev loader: chybějící modul hru neshodí, jen se zapíše a nahlásí v 90_boot.js -->
+<script>
+  window.__bnjMissing = [];
+  function bnjMiss(name) {
+    window.__bnjMissing.push(name);
+    console.warn('[BNJ] Modul se nenačetl: ' + name);
+  }
+</script>
+
+<!-- pořadí načítání dle CONTRACT.md -->
+<script src="src/00_engine.js"      onerror="bnjMiss('00_engine.js')"></script>
+<script src="src/10_strings.js"     onerror="bnjMiss('10_strings.js')"></script>
+<script src="src/20_backgrounds.js" onerror="bnjMiss('20_backgrounds.js')"></script>
+<script src="src/30_characters.js"  onerror="bnjMiss('30_characters.js')"></script>
+<script src="src/40_dialogues.js"   onerror="bnjMiss('40_dialogues.js')"></script>
+<script src="src/50_puzzles.js"     onerror="bnjMiss('50_puzzles.js')"></script>
+<script src="src/60_audio.js"       onerror="bnjMiss('60_audio.js')"></script>
+<script src="src/90_boot.js"        onerror="bnjMiss('90_boot.js')"></script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>pano</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}#game canvas{position:fixed;left:0;top:0;width:1920px!important;height:1080px!important}</style>
+</head><body><div id="game"></div>
+<script>
+var __fr = 0, __ft = 0;
+window.requestAnimationFrame = function (cb) { return setTimeout(function () { var t0 = performance.now(); cb(t0); __fr++; __ft += performance.now() - t0; }, 16); };
+setInterval(function () { console.log('PERF frames=' + __fr + ' avgms=' + (__ft / Math.max(1, __fr)).toFixed(1)); }, 1000);
+window.addEventListener('error', function (e) { console.log('JSERR ' + e.message + ' @' + e.lineno); });
+window.cancelAnimationFrame = clearTimeout;
+</script>
+<script src="../src/00_engine.js"></script>
+<script src="../src/10_strings.js"></script>
+<script src="../src/20_backgrounds.js"></script>
+<script src="../src/25_atmosphere.js"></script>
+<script src="../src/30_characters.js"></script>
+<script src="../src/40_dialogues.js"></script>
+<script src="../src/50_puzzles.js"></script>
+<script src="../src/60_audio.js"></script>
+<script src="../src/65_ambience.js"></script>
+<script src="../src/70_hints.js"></script>
+<script src="../src/90_boot.js"></script>
+<script>
+// hash: #scene,camX,grid(0/1),px,py,time  (px,py = pozice hráče, time = herní čas)
+window.addEventListener('load', function () {
+  var a = (location.hash || '#castle_yard,0,1').slice(1).split(',');
+  var sc = a[0], cam = +a[1] || 0, grid = a[2] !== '0';
+  setTimeout(function () {
+    BNJ.startNewGame();
+    setTimeout(function () {
+      var G = BNJ._G;
+      G.camLock = cam;
+      if (a[5]) setTimeout(function(){ G.time = +a[5]; }, 1600);
+      // a[6]: hint | settings | hs | menu | dlg:<id>  — UI stav pro snímek
+      if (a[6]) setTimeout(function(){
+        var m = a[6];
+        if (m === 'hs') G.showHs = true;
+        else if (m === 'hint') { BNJ.state.flags.knows_quest = true; window.dispatchEvent(new KeyboardEvent('keydown', {key:'h'})); G.hint.shown = 2; }
+        else if (m.indexOf('dlg:') === 0) BNJ.dialog(m.slice(4));
+        else if (m.indexOf('flags:') === 0) m.slice(6).split('+').forEach(function (f) { BNJ.state.flags[f] = true; });
+        else G.overlay = m;
+      }, 2000);
+      BNJ.goto(sc, a[3] ? [+a[3], +a[4]] : null);
+      setTimeout(function(){ G.sayQ = []; G.say = null; G.dlg = null; G.cut = null; G.sceneNameT = 0; }, 1500);
+      if (grid) {
+        var cv = document.querySelector('canvas');
+        var ov = document.createElement('canvas'); ov.width = 1920; ov.height = 1080;
+        ov.style.cssText = 'position:fixed;left:0;top:0;width:1920px;height:1080px;pointer-events:none';
+        document.body.appendChild(ov);
+        var x = ov.getContext('2d');
+        x.font = '14px monospace'; x.lineWidth = 1;
+        for (var gx = Math.ceil(cam / 100) * 100; gx < cam + 1920; gx += 100) {
+          x.strokeStyle = gx % 500 ? 'rgba(255,0,255,.35)' : 'rgba(255,0,255,.8)';
+          x.beginPath(); x.moveTo(gx - cam + .5, 0); x.lineTo(gx - cam + .5, 1080); x.stroke();
+          x.fillStyle = '#f0f'; x.fillText(gx, gx - cam + 2, 14);
+        }
+        for (var gy = 100; gy < 1080; gy += 100) {
+          x.strokeStyle = gy % 500 ? 'rgba(0,255,255,.35)' : 'rgba(0,255,255,.8)';
+          x.beginPath(); x.moveTo(0, gy + .5); x.lineTo(1920, gy + .5); x.stroke();
+          x.fillStyle = '#0ff'; x.fillText(gy, 2, gy - 2);
+        }
+      }
+    }, 400);
+  }, 300);
+});
+</script>
+</body></html>
